@@ -1,0 +1,59 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+volatile int pulsos = 0;
+float caudal_Lmin;
+float litrosTotales = 0;   // contador acumulado
+unsigned long tiempoAnterior;
+
+LiquidCrystal_I2C lcd(0x27,16,2);
+
+void contarPulsos() {
+  pulsos++;
+}
+
+void setup() {
+
+  pinMode(2, INPUT);
+
+  lcd.init();
+  lcd.backlight();
+
+  lcd.setCursor(0,0);
+  lcd.print("Medidor Flujo");
+
+  delay(2000);
+  lcd.clear();
+
+  attachInterrupt(digitalPinToInterrupt(2), contarPulsos, RISING);
+
+  tiempoAnterior = millis();
+}
+
+void loop() {
+
+  if (millis() - tiempoAnterior >= 1000) { // cada segundo
+    
+    detachInterrupt(digitalPinToInterrupt(2));
+
+    caudal_Lmin = pulsos / 7.5;
+
+    // convertir a litros por segundo y acumular
+    litrosTotales += caudal_Lmin / 60.0;
+
+    lcd.setCursor(0,0);
+    lcd.print("Flujo:");
+    lcd.print(caudal_Lmin);
+    lcd.print("L/m ");
+
+    lcd.setCursor(0,1);
+    lcd.print("Total:");
+    lcd.print(litrosTotales);
+    lcd.print("L ");
+
+    pulsos = 0;
+    tiempoAnterior = millis();
+
+    attachInterrupt(digitalPinToInterrupt(2), contarPulsos, RISING);
+  }
+}
